@@ -56,8 +56,10 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
     previous_num_people = 0
     last_capture_time = datetime.datetime.min  # Initialize with a minimum time
 
-    min_interval = datetime.timedelta(seconds=60)  # Minimum time interval between captures
+    min_interval = datetime.timedelta(seconds=30)  # Minimum time interval between captures
     class_counts = {}
+
+    last_capture_time = datetime.datetime.now() - datetime.timedelta(seconds=10)
     try:
         while True:
             ret, frame = video_cap.read()
@@ -94,18 +96,17 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
 
                 # Display the number of people and FPS on the frame
                 cv2.putText(frame, f'People: {num_people}', (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                if num_people != previous_num_people and (time_now - last_capture_time) > min_interval:
-                    # Update previous count
+                if num_people != previous_num_people and (time_now - last_capture_time) >= min_interval:
                     previous_num_people = num_people # Capture an image every 5 minutes (300 seconds)
                     last_capture_time = time_now
                     streamName = streamName
-                    image_name = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S") + "_"+streamName +".jpg"
-                    image_path = "/home/torqueai/blobdrive/" + image_name 
-
+                    image_name = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S") + "_streamName.jpg"
+                    image_path = "/home/torqueai/workspace/blobdrive/" + image_name
                     cv2.imwrite(image_path, frame)
-                        # Call the API asynchronously
+                    last_capture_time = time_now
+                                    # Call the API asynchronously
                     threading.Thread(target=async_api_call, args=(streamName, customer_id,image_name,cameraId,model_name,num_people)).start()
-            if model_name == 'fire':
+                if model_name == 'fire':
                
                             # # Optionally, save the frame if fire is detected
                     for *xyxy, conf, cls in results.xyxy[0].cpu().numpy():
@@ -121,7 +122,7 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                                 os.makedirs(image_folder_path)
                             streamName = streamName
                             image_name = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S") + "_"+streamName +".jpg"
-                            image_path = "/home/torqueai/blobdrive/" + image_name 
+                            image_path = "/home/torqueai/workspace/blobdrive/" + image_name 
 
                             cv2.imwrite(image_path, frame)
                             # Call the API asynchronously
@@ -157,7 +158,7 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                     if obj_id in new_ids or frames_since_last_capture[obj_id] > 30:
                         streamName = streamName
                         image_name = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S") + "_"+streamName +".jpg"
-                        image_path = "/home/torqueai/blobdrive/" + image_name 
+                        image_path = "/home/torqueai/workspace/blobdrive/" + image_name 
 
                         cv2.imwrite(image_path, frame)
                          # Call the API asynchronously

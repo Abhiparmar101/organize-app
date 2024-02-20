@@ -7,4 +7,4 @@ SENDER_EMAIL = 'jcvirani2000@gmail.com'  # Replace with the sender's email addre
 RECIPIENT_EMAIL = 'jasmita@ambiplatforms.com'  # Replace with the recipient's email address
 
 # Base path where models are stored
-MODEL_BASE_PATH = 'prebuilt_model/'
+MODEL_BASE_PATH = '/home/torqueai/workspace/blobdrive/m/'
