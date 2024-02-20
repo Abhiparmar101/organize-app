@@ -11,12 +11,12 @@ from app.utils.tracking import BasicTracker
 from app.utils.async_api import async_api_call
 from app.utils.email_service import send_email_notification_with_image
 import datetime
-
+from app.utils.globals import stream_processes
 
 #########################################################################3
 selected_model_name = None  # No default model
 detected_ids = set() 
-stream_processes = {}
+
 frames_since_last_capture = {}
 email_sent_flag = False
 def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cameraId,streamName):

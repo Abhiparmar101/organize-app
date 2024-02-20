@@ -4,8 +4,7 @@ import threading
 from .utils.video_streaming import  process_and_stream_frames
 import os
 from app.config import MODEL_BASE_PATH
-
-stream_processes = {}
+from app.utils.globals import stream_processes
 def configure_routes(app):
     @app.route('/stop_stream', methods=['POST'])
     def stop_stream():
