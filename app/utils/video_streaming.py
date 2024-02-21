@@ -1,9 +1,10 @@
 
 
 import threading
-
+from collections import deque
+import numpy as np
 import os
-from app.config import MODEL_BASE_PATH
+from app.config import MODEL_BASE_PATH,VIDEO_STORAGE_BASE_PATH
 import torch
 import cv2
 import subprocess as sp
@@ -19,6 +20,14 @@ detected_ids = set()
 
 frames_since_last_capture = {}
 email_sent_flag = False
+
+
+
+
+
+
+
+
 def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cameraId,streamName):
     global stream_processes,frames_since_last_capture
   
@@ -30,7 +39,8 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
     model.conf = 0.7
     
     video_cap = cv2.VideoCapture(camera_url)
-    
+    width = int(video_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(video_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     command = ['ffmpeg',
                '-f', 'rawvideo',
                '-pix_fmt', 'bgr24',
@@ -60,13 +70,18 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
     class_counts = {}
 
     last_capture_time = datetime.datetime.now() - datetime.timedelta(seconds=10)
+    # Initialize variables for video recording
+    recording_start_time = None
+    video_out = None
+    recording_duration = 30  # seconds
     try:
         while True:
             ret, frame = video_cap.read()
             if not ret:
                 break
-
+         
             results = model(frame)
+            
             detections = results.xyxy[0].cpu().numpy()  # Get detection results
 
             # Update tracker and draw bounding boxes
@@ -96,16 +111,30 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
 
                 # Display the number of people and FPS on the frame
                 cv2.putText(frame, f'People: {num_people}', (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                if num_people != previous_num_people and (time_now - last_capture_time) >= min_interval:
+                if num_people != previous_num_people and (time_now - last_capture_time) >= min_interval and recording_start_time is None:
                     previous_num_people = num_people # Capture an image every 5 minutes (300 seconds)
                     last_capture_time = time_now
                     streamName = streamName
-                    image_name = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S") + "_streamName.jpg"
+                    image_name = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S") +"_"+ streamName +".jpg"
                     image_path = "/home/torqueai/workspace/blobdrive/" + image_name
                     cv2.imwrite(image_path, frame)
                     last_capture_time = time_now
                                     # Call the API asynchronously
                     threading.Thread(target=async_api_call, args=(streamName, customer_id,image_name,cameraId,model_name,num_people)).start()
+                    recording_start_time = datetime.datetime.now()
+                    video_filename = f"{recording_start_time.strftime('%Y-%m-%d-%H-%M-%S')}_{streamName}.avi"
+                    video_path = os.path.join("/home/torqueai/workspace/blobdrive/", video_filename)
+                    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+                    video_out = cv2.VideoWriter(video_path, fourcc, .0, (width, height))
+
+                # Record video if within the 1-minute timeframe
+                if recording_start_time and (datetime.datetime.now() - recording_start_time).seconds <= recording_duration:
+                    video_out.write(frame)
+                elif recording_start_time and (datetime.datetime.now() - recording_start_time).seconds > recording_duration:
+                    # Stop recording after 1 minute
+                    video_out.release()
+                    video_out = None
+                    recording_start_time = None  # Reset recording flag
                 if model_name == 'fire':
                
                             # # Optionally, save the frame if fire is detected
@@ -121,7 +150,7 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                             if not os.path.exists(image_folder_path):
                                 os.makedirs(image_folder_path)
                             streamName = streamName
-                            image_name = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S") + "_"+streamName +".jpg"
+                            image_name = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S") + "_"+ streamName +".jpg"
                             image_path = "/home/torqueai/workspace/blobdrive/" + image_name 
 
                             cv2.imwrite(image_path, frame)
@@ -175,6 +204,8 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
     except Exception as e:
         print(f"An error occurred: {e}")
     finally:
+        if video_out is not None:
+            video_out.release()
         if process.poll() is None:
             process.terminate()
             process.wait()
