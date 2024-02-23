@@ -4,7 +4,7 @@ import threading
 from collections import deque
 import numpy as np
 import os
-from app.config import MODEL_BASE_PATH,VIDEO_STORAGE_BASE_PATH
+from app.config import MODEL_BASE_PATH,VIDEO_IMAGE_STORAGE_BASE_PATH
 import torch
 import cv2
 import subprocess as sp
@@ -12,8 +12,9 @@ from app.utils.tracking import BasicTracker
 from app.utils.async_api import async_api_call
 from app.utils.email_service import send_email_notification_with_image
 import datetime
+import time
 from app.utils.globals import stream_processes
-
+from app.error_warning_handling import update_camera_status_in_database
 #########################################################################3
 selected_model_name = None  # No default model
 detected_ids = set() 
@@ -30,7 +31,7 @@ email_sent_flag = False
 
 def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cameraId,streamName):
     global stream_processes,frames_since_last_capture
-  
+    print("cameraaaaa",cameraId)
     rtmp_url = stream_key
     model_path = f'{MODEL_BASE_PATH}/{model_name}.pt'
     model = torch.hub.load('yolov5', 'custom', path=model_path, source='local', force_reload=True, device=0)
@@ -62,6 +63,7 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
     FIRE_CLASS_ID = 1
     customer_id=customer_id
     cameraId=cameraId
+    
     streamName=streamName
     previous_num_people = 0
     last_capture_time = datetime.datetime.min  # Initialize with a minimum time
@@ -73,11 +75,17 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
     # Initialize variables for video recording
     recording_start_time = None
     video_out = None
-    recording_duration = 30  # seconds
+    recording_duration = 60  # seconds
+    last_successful_read = time.time()
+    timeout_threshold = 30  # Seconds
+
+ 
     try:
         while True:
             ret, frame = video_cap.read()
             if not ret:
+               
+                update_camera_status_in_database(cameraId,False)
                 break
          
             results = model(frame)
@@ -116,16 +124,16 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                     last_capture_time = time_now
                     streamName = streamName
                     image_name = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S") +"_"+ streamName +".jpg"
-                    image_path = "/home/torqueai/workspace/blobdrive/" + image_name
+                    image_path = VIDEO_IMAGE_STORAGE_BASE_PATH + image_name
                     cv2.imwrite(image_path, frame)
                     last_capture_time = time_now
                                     # Call the API asynchronously
                     threading.Thread(target=async_api_call, args=(streamName, customer_id,image_name,cameraId,model_name,num_people)).start()
                     recording_start_time = datetime.datetime.now()
                     video_filename = f"{recording_start_time.strftime('%Y-%m-%d-%H-%M-%S')}_{streamName}.avi"
-                    video_path = os.path.join("/home/torqueai/workspace/blobdrive/", video_filename)
+                    video_path = os.path.join(VIDEO_IMAGE_STORAGE_BASE_PATH, video_filename)
                     fourcc = cv2.VideoWriter_fourcc(*'XVID')
-                    video_out = cv2.VideoWriter(video_path, fourcc, .0, (width, height))
+                    video_out = cv2.VideoWriter(video_path, fourcc, 30.0, (width, height))
 
                 # Record video if within the 1-minute timeframe
                 if recording_start_time and (datetime.datetime.now() - recording_start_time).seconds <= recording_duration:
@@ -151,9 +159,24 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                                 os.makedirs(image_folder_path)
                             streamName = streamName
                             image_name = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S") + "_"+ streamName +".jpg"
-                            image_path = "/home/torqueai/workspace/blobdrive/" + image_name 
+                            image_path = VIDEO_IMAGE_STORAGE_BASE_PATH + image_name 
 
                             cv2.imwrite(image_path, frame)
+                            last_capture_time = time_now
+                            recording_start_time = datetime.datetime.now()
+                            video_filename = f"{recording_start_time.strftime('%Y-%m-%d-%H-%M-%S')}_{streamName}.avi"
+                            video_path = os.path.join(VIDEO_IMAGE_STORAGE_BASE_PATH, video_filename)
+                            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+                            video_out = cv2.VideoWriter(video_path, fourcc, 30.0, (width, height))
+
+                        # Record video if within the 1-minute timeframe
+                        if recording_start_time and (datetime.datetime.now() - recording_start_time).seconds <= recording_duration:
+                            video_out.write(frame)
+                        elif recording_start_time and (datetime.datetime.now() - recording_start_time).seconds > recording_duration:
+                            # Stop recording after 1 minute
+                            video_out.release()
+                            video_out = None
+                            recording_start_time = None  # Reset recording flag
                             # Call the API asynchronously
                             threading.Thread(target=async_api_call, args=(streamName, customer_id,image_name,cameraId,model_name,0)).start()
                          
@@ -184,31 +207,50 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                     else:
                         class_counts[class_name] = 1
                     # Capture image if new object is detected and enough frames have passed since the last capture
-                    if obj_id in new_ids or frames_since_last_capture[obj_id] > 30:
+                    if obj_id in new_ids and (time_now - last_capture_time) >= min_interval :
                         streamName = streamName
                         image_name = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S") + "_"+streamName +".jpg"
-                        image_path = "/home/torqueai/workspace/blobdrive/" + image_name 
+                        image_path = VIDEO_IMAGE_STORAGE_BASE_PATH + image_name 
 
                         cv2.imwrite(image_path, frame)
+                        last_capture_time = time_now
+                        recording_start_time = datetime.datetime.now()
+                        video_filename = f"{recording_start_time.strftime('%Y-%m-%d-%H-%M-%S')}_{streamName}.avi"
+                        video_path = os.path.join(VIDEO_IMAGE_STORAGE_BASE_PATH, video_filename)
+                        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+                        video_out = cv2.VideoWriter(video_path, fourcc, 30.0, (width, height))
+
+                    # Record video if within the 1-minute timeframe
+                    if recording_start_time and (datetime.datetime.now() - recording_start_time).seconds <= recording_duration:
+                        video_out.write(frame)
+                    elif recording_start_time and (datetime.datetime.now() - recording_start_time).seconds > recording_duration:
+                        # Stop recording after 1 minute
+                        video_out.release()
+                        video_out = None
+                        recording_start_time = None  # Reset recording flag
                          # Call the API asynchronously
                         threading.Thread(target=async_api_call, args=(streamName, customer_id,image_name,cameraId,model_name,len(class_counts))).start()
-                        frames_since_last_capture[obj_id] = 0
-                    else:
-                        # Increment the frame counter if no image was captured
-                        frames_since_last_capture[obj_id] += 1
+                
+
+            
             try:
                 process.stdin.write(frame.tobytes())
             except BrokenPipeError:
                 print("Broken pipe - FFmpeg process may have terminated unexpectedly.")
+                update_camera_status_in_database(cameraId,False)
                 break
     except Exception as e:
         print(f"An error occurred: {e}")
+        update_camera_status_in_database(cameraId,False)
     finally:
         if video_out is not None:
             video_out.release()
+            update_camera_status_in_database(cameraId, False)
         if process.poll() is None:
             process.terminate()
             process.wait()
         if stream_key in stream_processes:
             del stream_processes[stream_key]
+        
         video_cap.release()
+        

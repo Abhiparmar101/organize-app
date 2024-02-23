@@ -50,7 +50,7 @@ def configure_routes(app):
         # Append the model name at the end of the URL, after a slash
         modified_url_with_model = f"{modified_url}_{model_name}"
         print("mooo",modified_url_with_model)
-        
+        print("cameraaaaa",cameraId)
         # Unique key to identify the stream (could be refined based on requirements)
         stream_key = modified_url_with_model
         

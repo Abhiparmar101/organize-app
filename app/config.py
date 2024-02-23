@@ -8,4 +8,4 @@ RECIPIENT_EMAIL = 'jasmita@ambiplatforms.com'  # Replace with the recipient's em
 
 # Base path where models are stored
 MODEL_BASE_PATH = '/home/torqueai/workspace/blobdrive/m/'
-VIDEO_STORAGE_BASE_PATH = '/home/torqueai/workspace/blobdrive/'
+VIDEO_IMAGE_STORAGE_BASE_PATH = '/home/torqueai/workspace/blobdrive/'
