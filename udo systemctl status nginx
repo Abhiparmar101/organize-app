@@ -1,0 +1,25 @@
+[0;1;32m●[0m apache2.service - The Apache HTTP Server
+     Loaded: loaded (/lib/systemd/system/apache2.service; enabled; vendor preset: enabled)
+     Active: [0;1;32mactive (running)[0m since Fri 2024-02-23 19:53:48 IST; 5min ago
+       Docs: https://httpd.apache.org/docs/2.4/
+    Process: 21454 ExecStart=/usr/sbin/apachectl start (code=exited, status=0/SUCCESS)
+    Process: 22163 ExecReload=/usr/sbin/apachectl graceful [0;1;31m(code=exited, status=1/FAILURE)[0m
+   Main PID: 21458 (apache2)
+      Tasks: 55 (limit: 76966)
+     Memory: 16.8M
+        CPU: 84ms
+     CGroup: /system.slice/apache2.service
+             ├─21458 /usr/sbin/apache2 -k start
+             ├─21459 /usr/sbin/apache2 -k start
+             └─21460 /usr/sbin/apache2 -k start
+
+Feb 23 19:57:31 torqueserver systemd[1]: [0;1;39m[0;1;31m[0;1;39mapache2.service: Control process exited, code=exited, status=1/FAILURE[0m
+Feb 23 19:57:31 torqueserver systemd[1]: [0;1;31m[0;1;39m[0;1;31mReload failed for The Apache HTTP Server.[0m
+Feb 23 19:57:41 torqueserver systemd[1]: Reloading The Apache HTTP Server...
+Feb 23 19:57:41 torqueserver apachectl[22166]: AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 127.0.1.1. Set the 'ServerName' directive globally to suppress this message
+Feb 23 19:57:41 torqueserver apachectl[22166]: (2)No such file or directory: AH02291: Cannot access directory '/var/www/flaskhelloworldsite.com/logs/' for error log of vhost defined at /etc/apache2/sites-enabled/flaskhelloworldsite.com.conf:1
+Feb 23 19:57:41 torqueserver apachectl[22166]: AH00014: Configuration check failed
+Feb 23 19:57:41 torqueserver apachectl[22163]: Action 'graceful' failed.
+Feb 23 19:57:41 torqueserver apachectl[22163]: The Apache error log may have more information.
+Feb 23 19:57:41 torqueserver systemd[1]: [0;1;39m[0;1;31m[0;1;39mapache2.service: Control process exited, code=exited, status=1/FAILURE[0m
+Feb 23 19:57:41 torqueserver systemd[1]: [0;1;31m[0;1;39m[0;1;31mReload failed for The Apache HTTP Server.[0m

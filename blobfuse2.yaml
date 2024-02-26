@@ -1,0 +1,42 @@
+# Refer ./setup/baseConfig.yaml for full set of config parameters
+ 
+allow-other: true
+ 
+logging:
+  type: syslog
+  level: log_debug
+ 
+components:
+  - libfuse
+  - file_cache
+  - attr_cache
+  - azstorage
+ 
+libfuse:
+  attribute-expiration-sec: 120
+  entry-expiration-sec: 120
+  negative-entry-expiration-sec: 240
+ 
+file_cache:
+   path: /u1/blobfuse/cache
+#  timeout-sec: 120
+   max-size-mb: 8192
+   cleanup-on-start: true
+   allow-non-empty-temp: true
+stream:
+  block-size-mb: 8
+  blocks-per-file: 3
+  cache-size-mb: 1024
+ 
+attr_cache:
+  timeout-sec: 7200
+ 
+azstorage:
+  type: block
+  account-name: inferenceimage
+  account-key: FWDGWg8iInJjklNGNJJjQWgXNwfqUXIQeyoDf7jRQvqVlPyH/EtGFUfToZZPaF/qg08D83hLqWkz+AStb1yWNQ==
+  endpoint: https://inferenceimage.blob.core.windows.net
+  mode: sas
+  container: inferenceimages
+  sas: ?sp=racwdli&st=2024-01-12T06:45:32Z&se=2026-01-31T14:45:32Z&spr=https&sv=2022-11-02&sr=c&sig=wBmDj0eB2YO6ociG4pYmh705sVyyO7%2Bwy18UAFjG0KU%3D
+

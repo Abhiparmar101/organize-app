@@ -1,3 +1,5 @@
+
+import os
 # Define your email settings
 SMTP_SERVER = 'smtp.gmail.com'  # Replace with your SMTP server
 SMTP_PORT = 587  # SMTP port number
@@ -7,5 +9,5 @@ SENDER_EMAIL = 'jcvirani2000@gmail.com'  # Replace with the sender's email addre
 RECIPIENT_EMAIL = 'jasmita@ambiplatforms.com'  # Replace with the recipient's email address
 
 # Base path where models are stored
-MODEL_BASE_PATH = '/home/torqueai/workspace/blobdrive/m/'
-VIDEO_IMAGE_STORAGE_BASE_PATH = '/home/torqueai/workspace/blobdrive/'
+MODEL_BASE_PATH = os.getcwd()+'/blobdrive/m/'
+VIDEO_IMAGE_STORAGE_BASE_PATH = os.getcwd()+'/blobdrive/'
