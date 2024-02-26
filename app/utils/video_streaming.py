@@ -15,6 +15,11 @@ import datetime
 import time
 from app.utils.globals import stream_processes
 from app.error_warning_handling import update_camera_status_in_database
+from app.ppe_kit.sort_master.sort import Sort
+
+
+from ultralytics import YOLO
+import math
 #########################################################################3
 selected_model_name = None  # No default model
 detected_ids = set() 
@@ -34,14 +39,28 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
     print("cameraaaaa",cameraId)
     rtmp_url = stream_key
     model_path = f'{MODEL_BASE_PATH}/{model_name}.pt'
-    model = torch.hub.load('yolov5', 'custom', path=model_path, source='local', force_reload=True, device=0)
+    ###############
+    if model_name == "ppe_kit_det":
+        Model = YOLO(model_path)
+        classNames = ['Hardhat', 'Mask', 'NO-Hardhat', 'NO-Mask', 'NO-Safety Vest', 'Person', 'Safety Cone',
+                'Safety Vest', 'machinery', 'vehicle']
+
+        # Initialize the SORT tracker
+        mot_tracker = Sort()
+        tracked_persons = {}
+    ###############
+    else:
+        model = torch.hub.load('yolov5', 'custom', path=model_path, source='local', force_reload=True, device=0)
+    ###########
     
+    ################
     # Set the confidence threshold to 0.7
-    model.conf = 0.7
+        model.conf = 0.7
     
     video_cap = cv2.VideoCapture(camera_url)
     width = int(video_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(video_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = video_cap.get(cv2.CAP_PROP_FPS)
     command = ['ffmpeg',
                '-f', 'rawvideo',
                '-pix_fmt', 'bgr24',
@@ -49,7 +68,11 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                '-r', '5',
                '-i', '-',
                '-c:v', 'libx264',
+               '-preset', 'ultrafast',
+               '-tune', 'zerolatency',
+               '-b:v', '500k',
                '-pix_fmt', 'yuv420p',
+               '-g', str(int(fps) * 2),
                '-f', 'flv',
                rtmp_url]
     process = sp.Popen(command, stdin=sp.PIPE)
@@ -78,7 +101,6 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
     recording_duration = 60  # seconds
     last_successful_read = time.time()
     timeout_threshold = 30  # Seconds
-
  
     try:
         while True:
@@ -87,13 +109,15 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                
                 update_camera_status_in_database(cameraId,False)
                 break
-         
-            results = model(frame)
-            
-            detections = results.xyxy[0].cpu().numpy()  # Get detection results
+            if model_name == "ppe_kit_det":
+                results = Model(frame)
+            else:
+                results = model(frame)
+                
+                detections = results.xyxy[0].cpu().numpy()  # Get detection results
 
-            # Update tracker and draw bounding boxes
-            tracked_objects, new_ids = tracker.update(detections)
+                # Update tracker and draw bounding boxes
+                tracked_objects, new_ids = tracker.update(detections)
             time_now = datetime.datetime.now()
             time_diff = (time_now - time_reference).total_seconds()
             if model_name == 'crowd':
@@ -143,7 +167,7 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                     video_out.release()
                     video_out = None
                     recording_start_time = None  # Reset recording flag
-                if model_name == 'fire':
+            if model_name == 'fire':
                
                             # # Optionally, save the frame if fire is detected
                     for *xyxy, conf, cls in results.xyxy[0].cpu().numpy():
@@ -187,6 +211,60 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                             email_thread.start()
 
                             email_sent_flag = True
+
+
+            if model_name == 'ppe_kit_det':
+                   
+
+                    frame_objects = []
+
+                    for r in results:
+                        boxes = r.boxes
+                        for box in boxes:
+                            x1, y1, x2, y2 = box.xyxy[0]
+                            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                            conf = math.ceil((box.conf[0] * 100)) / 100
+                            cls = int(box.cls[0])
+                            class_name = classNames[cls]
+                            label = f'{class_name}{conf}'
+
+                            if class_name == 'Person':
+                                if conf > 0.7:
+                                    frame_objects.append([x1, y1, x2, y2])
+
+                            # Draw bounding boxes and labels
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                            cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    if frame_objects:
+                        # Pass the frame_objects to the SORT tracker
+                        trackers = mot_tracker.update(np.array(frame_objects))
+
+                        for d in trackers:
+                            x1, y1, x2, y2, track_id = d
+                            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+
+                            if class_name in ['NO-Hardhat', 'NO-Mask', 'NO-Safety Vest', 'Person']:
+                                # Person detected without safety gear
+                                if conf > 0.7:
+                                    
+                                    # Check if this person has been tracked before
+                                    if track_id not in tracked_persons:
+                                        tracked_persons[track_id] = {'detected_safety_gear': False}
+                                      
+                                    if not tracked_persons[track_id]['detected_safety_gear'] and  (time_now - last_capture_time) >= min_interval :
+                                        last_capture_time = time_now
+                                        streamName = streamName
+                                        image_name = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S") + "_"+streamName +".jpg"
+                                        image_path = VIDEO_IMAGE_STORAGE_BASE_PATH + image_name 
+
+                                        cv2.imwrite(image_path, frame)
+                                        last_capture_time = time_now
+                                        threading.Thread(target=async_api_call, args=(streamName, customer_id,image_name,cameraId,model_name,0)).start()
+                                        email_thread = threading.Thread(target=send_email_notification_with_image,
+                                                            args=("PERSON WITHOUT PPE!", "A PERSON has been detected without ppe kit. Please take immediate safety action.", image_path))
+                                        email_thread.start()
+
+                                        email_sent_flag = True
             else: 
                      
                         # Render frame with tracked objects
