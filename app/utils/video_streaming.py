@@ -128,8 +128,8 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                     if int(obj[5]) == 0 and obj[4] >= 0.60:  # Check confidence
                         xmin, ymin, xmax, ymax = map(int, obj[:4])
                         num_people += 1
-                        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 2)
-                        cv2.putText(frame, f"person {obj[4]:.2f}", (xmin, ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 1)
+                        cv2.putText(frame, f"person", (xmin, ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 1)
 
                 # Update FPS calculation
                
@@ -141,7 +141,7 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                     counter_frame += 1
 
                 # Display the number of people and FPS on the frame
-                cv2.putText(frame, f'People: {num_people}', (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                cv2.putText(frame, f'People: {num_people}', (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 1)
                 if num_people != previous_num_people and (time_now - last_capture_time) >= min_interval and recording_start_time is None:
                     previous_num_people = num_people # Capture an image every 5 minutes (300 seconds)
                     last_capture_time = time_now
@@ -172,9 +172,9 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                     for *xyxy, conf, cls in results.xyxy[0].cpu().numpy():
                         # Assuming fire class ID is 0, adjust according to your model
                         if cls == 0:
-                            label = f'Fire {conf:.2f}'
-                            cv2.rectangle(frame, (int(xyxy[0]), int(xyxy[1])), (int(xyxy[2]), int(xyxy[3])), (0, 0, 255), 2)
-                            cv2.putText(frame, label, (int(xyxy[0]), int(xyxy[1])-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255,255,255), 2)
+                            label = f'Fire'
+                            cv2.rectangle(frame, (int(xyxy[0]), int(xyxy[1])), (int(xyxy[2]), int(xyxy[3])), (0, 0, 255), 1)
+                            cv2.putText(frame, label, (int(xyxy[0]), int(xyxy[1])-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255,255,255), 1)
                                                                                    
                             today_folder = datetime.datetime.now().strftime("%Y-%m-%d")
                             image_folder_path = os.path.join(os.getcwd(), "history", today_folder, model_name)
@@ -215,11 +215,11 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                         # Render frame with tracked objects
                 for obj_id, obj in tracked_objects.items():
                     x1, y1, x2, y2 = obj['bbox']
-                    cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
+                    cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 1)
                     class_id = int(obj['cls'])
                     class_name = model.names[class_id]
                     label = f"{model.names[int(obj['cls'])]}"
-                    cv2.putText(frame, label, (int(x1), int(y1 - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                    cv2.putText(frame, label, (int(x1), int(y1 - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 1)
 
                     # Check if the object ID is not in the frames_since_last_capture and update accordingly
                     if obj_id not in frames_since_last_capture:
