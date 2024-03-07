@@ -1,4 +1,3 @@
-
 from app.config import MODEL_BASE_PATH
 import torch
 import cv2
@@ -65,11 +64,10 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
     # last_capture_time = datetime.datetime.min  # Initialize with a minimum time
 
     
-    time_reference = datetime.datetime.now()
 
- 
+
+    time_reference = datetime.datetime.now()
     num_people = 0
-    previous_num_people = 0
     #time_diff = (time_now - time_reference).total_seconds()
     try:
         while True:
@@ -79,148 +77,15 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                 break
        
             if model_name == 'crowd':
-                   
-                num_people = 0
-               
-                for obj in detections:
-                    # Class ID for 'person' is assumed to be 0
-                    if int(obj[5]) == 0 and obj[4] >= 0.60:  # Check confidence
-                        xmin, ymin, xmax, ymax = map(int, obj[:4])
-                        num_people += 1
-                        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 2)
-                        cv2.putText(frame, f"person {obj[4]:.2f}", (xmin, ymin - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-
-                # Update FPS calculation
-               
-                if time_diff >= 1:
-                    time_reference = time_now
-                    processed_fps = counter_frame
-                    counter_frame = 0
-                else:
-                    counter_frame += 1
-
-                # Display the number of people and FPS on the frame
-                cv2.putText(frame, f'People: {num_people}', (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                if num_people != previous_num_people and (time_now - last_capture_time) >= min_interval and recording_start_time is None:
-                    previous_num_people = num_people # Capture an image every 5 minutes (300 seconds)
-                    last_capture_time = time_now
-                    streamName = streamName
-                    image_name = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S") +"_"+ streamName +".jpg"
-                    image_path = VIDEO_IMAGE_STORAGE_BASE_PATH + image_name
-                    cv2.imwrite(image_path, frame)
-                    last_capture_time = time_now
-                                    # Call the API asynchronously
-                    threading.Thread(target=async_api_call, args=(streamName, customer_id,image_name,cameraId,model_name,num_people)).start()
-                    recording_start_time = datetime.datetime.now()
-                    video_filename = f"{recording_start_time.strftime('%Y-%m-%d-%H-%M-%S')}_{streamName}.avi"
-                    video_path = os.path.join(VIDEO_IMAGE_STORAGE_BASE_PATH, video_filename)
-                    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-                    video_out = cv2.VideoWriter(video_path, fourcc, 30.0, (width, height))
-
-                # Record video if within the 1-minute timeframe
-                if recording_start_time and (datetime.datetime.now() - recording_start_time).seconds <= recording_duration:
-                    video_out.write(frame)
-                elif recording_start_time and (datetime.datetime.now() - recording_start_time).seconds > recording_duration:
-                    # Stop recording after 1 minute
-                    video_out.release()
-                    video_out = None
-                    recording_start_time = None  # Reset recording flag
-                if model_name == 'fire':
-               
-                            # # Optionally, save the frame if fire is detected
-                    for *xyxy, conf, cls in results.xyxy[0].cpu().numpy():
-                        # Assuming fire class ID is 0, adjust according to your model
-                        if cls == 0:
-                            label = f'Fire {conf:.2f}'
-                            cv2.rectangle(frame, (int(xyxy[0]), int(xyxy[1])), (int(xyxy[2]), int(xyxy[3])), (0, 0, 255), 2)
-                            cv2.putText(frame, label, (int(xyxy[0]), int(xyxy[1])-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255,255,255), 2)
-                                                                                   
-                            today_folder = datetime.datetime.now().strftime("%Y-%m-%d")
-                            image_folder_path = os.path.join(os.getcwd(), "history", today_folder, model_name)
-                            if not os.path.exists(image_folder_path):
-                                os.makedirs(image_folder_path)
-                            streamName = streamName
-                            image_name = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S") + "_"+ streamName +".jpg"
-                            image_path = VIDEO_IMAGE_STORAGE_BASE_PATH + image_name 
-
-                            cv2.imwrite(image_path, frame)
-                            last_capture_time = time_now
-                            recording_start_time = datetime.datetime.now()
-                            video_filename = f"{recording_start_time.strftime('%Y-%m-%d-%H-%M-%S')}_{streamName}.avi"
-                            video_path = os.path.join(VIDEO_IMAGE_STORAGE_BASE_PATH, video_filename)
-                            fourcc = cv2.VideoWriter_fourcc(*'XVID')
-                            video_out = cv2.VideoWriter(video_path, fourcc, 30.0, (width, height))
-
-                        # Record video if within the 1-minute timeframe
-                        if recording_start_time and (datetime.datetime.now() - recording_start_time).seconds <= recording_duration:
-                            video_out.write(frame)
-                        elif recording_start_time and (datetime.datetime.now() - recording_start_time).seconds > recording_duration:
-                            # Stop recording after 1 minute
-                            video_out.release()
-                            video_out = None
-                            recording_start_time = None  # Reset recording flag
-                            # Call the API asynchronously
-                            threading.Thread(target=async_api_call, args=(streamName, customer_id,image_name,cameraId,model_name,0)).start()
-                         
-
-
-                            email_thread = threading.Thread(target=send_email_notification_with_image,
-                                                            args=("Fire Detected!", "A fire has been detected. Please take immediate action.", image_path))
-                            email_thread.start()
-
-                            email_sent_flag = True
-            else: 
-                     
-                        # Render frame with tracked objects
-                for obj_id, obj in tracked_objects.items():
-                    x1, y1, x2, y2 = obj['bbox']
-                    cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
-                    class_id = int(obj['cls'])
-                    class_name = model.names[class_id]
-                    label = f"{model.names[int(obj['cls'])]}"
-                    cv2.putText(frame, label, (int(x1), int(y1 - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-
-                    # Check if the object ID is not in the frames_since_last_capture and update accordingly
-                    if obj_id not in frames_since_last_capture:
-                        frames_since_last_capture[obj_id] = 0
-                     # Update class counts
-                    if class_name in class_counts:
-                        class_counts[class_name] += 1
-                    else:
-                        class_counts[class_name] = 1
-                    # Capture image if new object is detected and enough frames have passed since the last capture
-                    if obj_id in new_ids and (time_now - last_capture_time) >= min_interval :
-                        streamName = streamName
-                        image_name = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S") + "_"+streamName +".jpg"
-                        image_path = VIDEO_IMAGE_STORAGE_BASE_PATH + image_name 
-
-                        cv2.imwrite(image_path, frame)
-                        last_capture_time = time_now
-                        recording_start_time = datetime.datetime.now()
-                        video_filename = f"{recording_start_time.strftime('%Y-%m-%d-%H-%M-%S')}_{streamName}.avi"
-                        video_path = os.path.join(VIDEO_IMAGE_STORAGE_BASE_PATH, video_filename)
-                        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-                        video_out = cv2.VideoWriter(video_path, fourcc, 30.0, (width, height))
-
-                    # Record video if within the 1-minute timeframe
-                    if recording_start_time and (datetime.datetime.now() - recording_start_time).seconds <= recording_duration:
-                        video_out.write(frame)
-                    elif recording_start_time and (datetime.datetime.now() - recording_start_time).seconds > recording_duration:
-                        # Stop recording after 1 minute
-                        video_out.release()
-                        video_out = None
-                        recording_start_time = None  # Reset recording flag
-                         # Call the API asynchronously
-                        threading.Thread(target=async_api_call, args=(streamName, customer_id,image_name,cameraId,model_name,len(class_counts))).start()
-                
-
-            
-            try:
-                process.stdin.write(frame.tobytes())
-            except BrokenPipeError:
-                print("Broken pipe - FFmpeg process may have terminated unexpectedly.")
-                update_camera_status_in_database(cameraId,False)
-                break
+                process_and_stream_frames_crowd(process,frame,model, model_name, customer_id, cameraId, streamName,width,height, time_reference)
+     
+            if model_name == 'fire':
+                process_and_stream_frames_fire_det(process,frame,model, model_name, customer_id, cameraId, streamName,width,height)
+            if model_name == 'ppe_kit_det':
+                process_and_stream_frames_ppe_kit_det(process,frame,Model, model_name, customer_id, cameraId, streamName,width,height)
+            else:
+                process_and_stream_frames_object_det(process,frame,model, model_name, customer_id, cameraId, streamName,width,height) 
+              
     except Exception as e:
         print(f"An error occurred: {e}")
         update_camera_status_in_database(cameraId,False)          
