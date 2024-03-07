@@ -25,7 +25,7 @@ def async_api_call(streamName, customer_id,image_name,cameraId,model_name,imgcou
 
         response = requests.post(api_url, json=data)
         if response.status_code == 200:
-            print("Data sent successfully!")
+            print("Data sent successfully!", imgcount,"url:",img_url)
         else:
             print("Failed to send data! Response Code:", response.status_code)
     except Exception as e:
