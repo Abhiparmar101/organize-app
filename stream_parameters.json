@@ -1,0 +1,18 @@
+{
+    "rtmp://media5.ambicam.com:1938/live/70a6d3bb-7757-48cd-9926-8a6bc4987f0f_crowd": {
+        "model_name": "crowd",
+        "camera_url": "rtmp://media12.ambicam.com:1938/dvr30/70a6d3bb-7757-48cd-9926-8a6bc4987f0f",
+        "customer_id": "A447481E-BF17-ED11-9128-D05099D384F8",
+        "cameraId": "DBC9ECF5-B76F-ED11-9129-D05099D384F7",
+        "streamName": "70a6d3bb-7757-48cd-9926-8a6bc4987f0f",
+        "retrying": true
+    },
+    "rtmp://media5.ambicam.com:1938/live/636829de-13fd-4729-ad10-90b1ea892fc0_crowd": {
+        "model_name": "crowd",
+        "camera_url": "rtmp://media5.ambicam.com:1938/live/636829de-13fd-4729-ad10-90b1ea892fc0",
+        "customer_id": "A447481E-BF17-ED11-9128-D05099D384F8",
+        "cameraId": "DBC9ECF5-B76F-ED11-9129-D05099D384F7",
+        "streamName": "636829de-13fd-4729-ad10-90b1ea892fc0",
+        "retrying": true
+    }
+}

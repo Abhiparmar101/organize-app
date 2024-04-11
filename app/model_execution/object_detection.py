@@ -10,8 +10,7 @@ import torch
 from app.utils.tracking import BasicTracker
 from app.utils.globals import frames_since_last_capture,min_interval_object_detection,last_capture_time_object_detection 
 
-
-def process_and_stream_frames_object_det(process,frame,model, model_name, customer_id, cameraId, streamName,width,height):
+def process_and_stream_frames_object_det(frame, model,model_name, time_reference, counter_frame, previous_num_people, last_capture_time, streamName, customer_id, cameraId):
     global frames_since_last_capture,last_capture_time_object_detection
     time_now = datetime.datetime.now()
     customer_id = customer_id
@@ -58,7 +57,7 @@ def process_and_stream_frames_object_det(process,frame,model, model_name, custom
 
             cv2.imwrite(image_path, frame)
               # Call the API asynchronously
-            threading.Thread(target=async_api_call, args=(streamName, customer_id, image_name, cameraId, model_name, len(class_counts))).start()
+            # threading.Thread(target=async_api_call, args=(streamName, customer_id, image_name, cameraId, model_name, len(class_counts))).start()
             last_capture_time_object_detection=time_now
         #     print("lassst",last_capture_time_object_detection)
         #     # last_capture_time_object_detection = time_now
@@ -78,9 +77,9 @@ def process_and_stream_frames_object_det(process,frame,model, model_name, custom
         #     recording_start_time = None  # Reset recording flag
         
           
-        try:
-            process.stdin.write(frame.tobytes())
-        except BrokenPipeError:
-            print("Broken pipe - FFmpeg process may have terminated unexpectedly.")
-            update_camera_status_in_database(cameraId,False)
-            break
+        # try:
+        #     process.stdin.write(frame.tobytes())
+        # except BrokenPipeError:
+        #     print("Broken pipe - FFmpeg process may have terminated unexpectedly.")
+        #     update_camera_status_in_database(cameraId,False)
+        #     break

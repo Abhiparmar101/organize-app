@@ -1,12 +1,14 @@
 
-
+import logging
 import threading
 from collections import deque
 import numpy as np
 import os
 from app.config import MODEL_BASE_PATH,VIDEO_IMAGE_STORAGE_BASE_PATH
 import torch
+
 import cv2
+
 import subprocess as sp
 from app.utils.tracking import BasicTracker
 from app.utils.async_api import async_api_call
@@ -16,6 +18,7 @@ import time
 from app.utils.globals import stream_processes
 from app.error_warning_handling import update_camera_status_in_database
 from app.model_execution.crowd_count import process_crowd_detection
+import sys
 #########################################################################3
 selected_model_name = None  # No default model
 detected_ids = set() 
@@ -24,15 +27,27 @@ frames_since_last_capture = {}
 email_sent_flag = False
 
 
+# Configure logging
+logging.basicConfig(filename='logs/video_streaming.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 
-
-
-
+def log_subprocess_stderr(process, logger):
+    """
+    Reads stderr from the subprocess and logs each line.
+    
+    :param process: The subprocess object.
+    :param logger: Logger object for logging messages.
+    """
+    while True:
+        line = process.stderr.readline()
+        if not line:
+            break
+        logger.error(line.decode().strip())
 
 def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cameraId,streamName):
     global stream_processes,frames_since_last_capture
     print("cameraaaaa",cameraId)
+    logging.info(f"Starting camera stream: {cameraId}")
     rtmp_url = stream_key
     model_path = f'{MODEL_BASE_PATH}/{model_name}.pt'
     model = torch.hub.load('yolov5', 'custom', path=model_path, source='local', force_reload=True, device=0)
@@ -41,6 +56,7 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
     model.conf = 0.7
     
     video_cap = cv2.VideoCapture(camera_url)
+    print(camera_url)
     width = int(video_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(video_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     # command = ['ffmpeg',
@@ -76,8 +92,13 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                 rtmp_url]
 
 
-    process = sp.Popen(command, stdin=sp.PIPE)
+    process = sp.Popen(command, stdin=sp.PIPE,stderr=sp.PIPE)
     stream_processes[stream_key] = process
+    # After starting the FFmpeg process
+    # Start logging stderr in a separate thread
+    stderr_thread = threading.Thread(target=log_subprocess_stderr, args=(process, logging))
+    stderr_thread.daemon = True  # Ensure thread exits when the main program does
+    stderr_thread.start()
     
     tracker = BasicTracker()
     time_reference = datetime.datetime.now()
@@ -107,27 +128,31 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
     try:
         while True:
             ret, frame = video_cap.read()
+
             if not ret:
-               
+                
+                logging.error(f"Failed to read from camera: {stream_key}")
                 update_camera_status_in_database(cameraId,False)
+               
                 break
          
             
+            results = model(frame)
 
+            detections = results.xyxy[0].cpu().numpy()  # Get detection results
             # Update tracker and draw bounding boxes
             # tracked_objects, new_ids = tracker.update(detections)
             time_now = datetime.datetime.now()
             time_diff = (time_now - time_reference).total_seconds()
             if model_name == 'crowd':
-                results = model(frame)
-            
-                detections = results.xyxy[0].cpu().numpy()  # Get detection results
-                frame, time_reference, counter_frame, previous_num_people, last_capture_time, streamName,customer_id, cameraId = process_crowd_detection(frame, detections, model_name, time_reference, counter_frame, previous_num_people, last_capture_time, streamName, customer_id, cameraId)   
+               
+               
+                frame, time_reference, counter_frame, previous_num_people, last_capture_time, streamName, customer_id, cameraId = process_crowd_detection(frame, detections, model_name, time_reference, counter_frame, previous_num_people, last_capture_time, streamName, customer_id, cameraId)   
                 
-                if model_name == 'fire':
+            if model_name == 'fire':
                
                             # # Optionally, save the frame if fire is detected
-                    for *xyxy, conf, cls in results.xyxy[0].cpu().numpy():
+                for *xyxy, conf, cls in results.xyxy[0].cpu().numpy():
                         # Assuming fire class ID is 0, adjust according to your model
                         if cls == 0:
                             label = f'Fire'
@@ -169,7 +194,9 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
 
                             email_sent_flag = True
             else: 
-                     
+    
+                tracked_objects, new_ids = tracker.update(detections)
+                # tracked_objects, new_ids = tracker.update(detections)
                         # Render frame with tracked objects
                 for obj_id, obj in tracked_objects.items():
                     x1, y1, x2, y2 = obj['bbox']
@@ -216,22 +243,28 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
             
             try:
                 process.stdin.write(frame.tobytes())
+               
             except BrokenPipeError:
                 print("Broken pipe - FFmpeg process may have terminated unexpectedly.")
+
                 update_camera_status_in_database(cameraId,False)
+                logging.error(f"Stream terminated: {stream_key}")
                 break
     except Exception as e:
         print(f"An error occurred: {e}")
         update_camera_status_in_database(cameraId,False)
+        logging.error(f"An unexpected error occurred: {e}")
     finally:
         if video_out is not None:
             video_out.release()
             update_camera_status_in_database(cameraId, False)
+            
         if process.poll() is None:
             process.terminate()
             process.wait()
         if stream_key in stream_processes:
+            logging.error(f"Stream stopped: {stream_key}")
             del stream_processes[stream_key]
+            
         
-        video_cap.release()
         
