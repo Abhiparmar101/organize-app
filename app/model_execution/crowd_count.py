@@ -3,6 +3,7 @@ import os
 import datetime
 import threading  # Import threading for asynchronous API calls
 from app.utils.async_api import async_api_call
+from app.config import MODEL_BASE_PATH, VIDEO_IMAGE_STORAGE_BASE_PATH
 min_interval = datetime.timedelta(seconds=10)
 
 def process_crowd_detection(frame, detections, model_name, time_reference, counter_frame, previous_num_people, last_capture_time, streamName, customer_id, cameraId):
@@ -21,7 +22,7 @@ def process_crowd_detection(frame, detections, model_name, time_reference, count
         previous_num_people = num_people
         last_capture_time = time_now
         image_name = time_now.strftime("%Y-%m-%d-%H:%M:%S") + "_" + streamName + ".jpg"
-        image_path = "/home/torqueai/github/torque/organize-app/blobdrive/" + image_name
+        image_path = VIDEO_IMAGE_STORAGE_BASE_PATH + image_name
 
         cv2.imwrite(image_path, frame)
         # Call the API asynchronously

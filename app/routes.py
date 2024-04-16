@@ -82,7 +82,7 @@ import time
 
 def monitor_log_and_trigger_api():
   
-        for line in tailer.follow(open("/home/torqueai/gituhub/organize-app/logs/video_streaming.log")):
+        for line in tailer.follow(open("logs/video_streaming.log")):
             if "Stream terminated" in line or  "Failed to read from camera" in line:
                 stream_url = line.split(": ")[-1].strip()
                 stream_key = stream_url  # Assuming stream_key can be derived directly

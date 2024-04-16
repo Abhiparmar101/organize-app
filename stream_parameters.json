@@ -14,5 +14,29 @@
         "cameraId": "DBC9ECF5-B76F-ED11-9129-D05099D384F7",
         "streamName": "636829de-13fd-4729-ad10-90b1ea892fc0",
         "retrying": true
+    },
+    "rtmp://media5.ambicam.com:1938/live/731ad144-a53e-42fa-aa34-74abbab7f917_crowd": {
+        "model_name": "crowd",
+        "camera_url": "rtmp://media12.ambicam.com:1938/dvr30/731ad144-a53e-42fa-aa34-74abbab7f917",
+        "customer_id": "A447481E-BF17-ED11-9128-D05099D384F8",
+        "cameraId": "731ad144-a53e-42fa-aa34-74abbab7f919",
+        "streamName": "1efa24f9-0cd0-47c5-b604-c7e3ee118302",
+        "retrying": false
+    },
+    "rtmp://media5.ambicam.com:1938/live/731ad144-a53e-42fa-aa34-74abbab7f917_torque": {
+        "model_name": "torque",
+        "camera_url": "rtmp://media12.ambicam.com:1938/dvr30/731ad144-a53e-42fa-aa34-74abbab7f917",
+        "customer_id": "A447481E-BF17-ED11-9128-D05099D384F8",
+        "cameraId": "731ad144-a53e-42fa-aa34-74abbab7f919",
+        "streamName": "1efa24f9-0cd0-47c5-b604-c7e3ee118302",
+        "retrying": false
+    },
+    "rtmp://media5.ambicam.com:1938/live/731ad144-a53e-42fa-aa34-74abbab7f917_firev8": {
+        "model_name": "firev8",
+        "camera_url": "rtmp://media12.ambicam.com:1938/dvr30/731ad144-a53e-42fa-aa34-74abbab7f917",
+        "customer_id": "A447481E-BF17-ED11-9128-D05099D384F8",
+        "cameraId": "731ad144-a53e-42fa-aa34-74abbab7f919",
+        "streamName": "1efa24f9-0cd0-47c5-b604-c7e3ee118302",
+        "retrying": false
     }
 }
