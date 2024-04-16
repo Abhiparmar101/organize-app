@@ -22,6 +22,8 @@ from app.model_execution.firev8 import process_fire_detection
 import sys
 import math
 import cvzone
+from ultralytics import YOLO
+from collections import defaultdict
 #########################################################################3
 selected_model_name = None  # No default model
 detected_ids = set() 
@@ -29,6 +31,7 @@ detected_ids = set()
 frames_since_last_capture = {}
 email_sent_flag = False
 
+track_history = defaultdict(lambda: [])
 
 # Configure logging
 logging.basicConfig(filename='logs/video_streaming.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -122,14 +125,13 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
     last_fire_capture_time = datetime.datetime.min
 
     
-    if model_name != 'firev8':
-        # Load model for other types (e.g., crowd detection)
+    if model_name == 'torquev1':
+        model = YOLO('/home/torqueai/gituhub/organize-app/blobdrive/m/torquev1.pt')  # Adjust the path as necessary
+    elif model_name != 'firev8':
         model_path = os.path.join(MODEL_BASE_PATH, f'{model_name}.pt')
         model = torch.hub.load('yolov5', 'custom', path=model_path, source='local', force_reload=True, device='cpu')
-        model.conf = 0.7  # Set the confidence threshold
+        model.conf = 0.7  # Confidence threshold
     else:
-        # Specific setup for fire detection model
-        from ultralytics import YOLO  # Import here to ensure it's only needed for fire detection
         model = YOLO(os.path.join(MODEL_BASE_PATH, 'firev8.pt'))
         classnames = ['fire']
 
@@ -139,24 +141,40 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                 if not ret:
                     update_camera_status_in_database(cameraId, False)
                     break
-                
-                if model_name == 'firev8':
+                if model_name == 'torquev1':
+                    results = model.track(frame, persist=True)
+
+                    boxes = results[0].boxes.xywh.cpu()
+                    track_ids = results[0].boxes.id.int().cpu().tolist()
+
+                    # Visualize the results on the frame
+                    frame = results[0].plot()
+
+                    # Plot the tracks
+                    for box, track_id in zip(boxes, track_ids):
+                        x, y, w, h = box
+                        track = track_history[track_id]
+                        track.append((float(x), float(y)))  # x, y center point
+                        if len(track) > 30:  # retain 90 tracks for 90 frames
+                            track.pop(0)
+
+                        # Draw the tracking lines
+                        points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
+                        cv2.polylines(frame, [points], isClosed=False, color=(230, 230, 230), thickness=10)
+                elif model_name == 'firev8':
                     frame, last_fire_capture_time, fire_detected = process_fire_detection(frame, model, classnames, streamName, customer_id, cameraId, model_name, last_fire_capture_time, min_fire_interval)
                 elif model_name == 'crowd':
                     results = model(frame)
                 
                     detections = results.xyxy[0].cpu().numpy()  # Get detection results
                     frame, time_reference, counter_frame, previous_num_people, last_capture_time, streamName,customer_id, cameraId = process_crowd_detection(frame, detections, model_name, time_reference, counter_frame, previous_num_people, last_capture_time, streamName, customer_id, cameraId)   
-
-    
-    
-            
+     
+   
                 try:
                     process.stdin.write(frame.tobytes())
                 
                 except BrokenPipeError:
                     print("Broken pipe - FFmpeg process may have terminated unexpectedly.")
-
                     update_camera_status_in_database(cameraId,False)
                     logging.error(f"Stream terminated: {stream_key}")
                     break
