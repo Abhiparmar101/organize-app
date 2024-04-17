@@ -126,7 +126,7 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
 
     
     if model_name == 'torquev1':
-        model = YOLO('/home/torqueai/gituhub/organize-app/blobdrive/m/torquev1.pt')  # Adjust the path as necessary
+        model = YOLO(MODEL_BASE_PATH,'torquev1.pt')  # Adjust the path as necessary
     elif model_name != 'firev8':
         model_path = os.path.join(MODEL_BASE_PATH, f'{model_name}.pt')
         model = torch.hub.load('yolov5', 'custom', path=model_path, source='local', force_reload=True, device='cpu')
