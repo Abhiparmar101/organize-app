@@ -72,7 +72,7 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
     #         '-g', '30',  # Keyframe every second if 30fps
     #         '-f', 'flv',
     #         rtmp_url]
-    fps =15
+    fps =20
     command = ['ffmpeg',
                '-y',
                '-f', 'rawvideo',
@@ -126,12 +126,14 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
 
     
     if model_name == 'torquev1':
-        model = YOLO(MODEL_BASE_PATH,'torquev1.pt')  # Adjust the path as necessary
+        model = YOLO('/home/torqurserver/github/organize-app/blobdrive/m/torquev1.pt')  # Adjust the path as necessary
+        model.conf = 0.5
     elif model_name != 'firev8':
         model_path = os.path.join(MODEL_BASE_PATH, f'{model_name}.pt')
-        model = torch.hub.load('yolov5', 'custom', path=model_path, source='local', force_reload=True, device='cpu')
-        model.conf = 0.7  # Confidence threshold
+        model = torch.hub.load('yolov5', 'custom', path=model_path, source='local', force_reload=True, device=0)
+        model.conf = 0.4  # Confidence threshold
     else:
+        # torch.cuda.set_device(1)
         model = YOLO(os.path.join(MODEL_BASE_PATH, 'firev8.pt'))
         classnames = ['fire']
 

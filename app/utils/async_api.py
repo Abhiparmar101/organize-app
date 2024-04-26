@@ -21,7 +21,7 @@ def async_api_call(streamName, customer_id,image_name,cameraId,model_name,imgcou
             'customerid': customer_id,
             'streamname':streamName
         }
-        api_url="https://staging.ambicam.com:3000/api/post-analytics"
+        api_url="http://68.183.86.56:4000/api/post-analytics"
 
         response = requests.post(api_url, json=data, verify=False)
         if response.status_code == 200:

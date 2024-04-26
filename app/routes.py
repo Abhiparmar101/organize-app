@@ -57,7 +57,7 @@ def get_api_parameters(stream_key):
 def trigger_api_call(api_parameters):
     """Trigger the /set_model API call with the provided parameters."""
     
-    url = "https://192.168.29.32:5000/set_model"
+    url = "https://192.168.29.212:443/set_model"
     headers = {'Content-Type': 'application/json'}
     response = requests.post(url, json=api_parameters, headers=headers, verify=False)  # Skipping SSL verification for example
     print(f"API Call Triggered: Status Code {response.status_code}, Response: {response.text}")
