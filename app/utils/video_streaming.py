@@ -19,6 +19,7 @@ from app.utils.globals import stream_processes
 from app.error_warning_handling import update_camera_status_in_database
 from app.model_execution.crowd_count import process_crowd_detection
 from app.model_execution.firev8 import process_fire_detection
+from app.model_execution.vehical_detection import process_vehicle_detection
 import sys
 import math
 import cvzone
@@ -130,7 +131,7 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
         model.conf = 0.5
     elif model_name != 'firev8':
         model_path = os.path.join(MODEL_BASE_PATH, f'{model_name}.pt')
-        model = torch.hub.load('yolov5', 'custom', path=model_path, source='local', force_reload=True, device=0)
+        model = torch.hub.load('yolov5', 'custom', path=model_path, source='local', force_reload=True)
         model.conf = 0.4  # Confidence threshold
     else:
         # torch.cuda.set_device(1)
@@ -170,7 +171,10 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                 
                     detections = results.xyxy[0].cpu().numpy()  # Get detection results
                     frame, time_reference, counter_frame, previous_num_people, last_capture_time, streamName,customer_id, cameraId = process_crowd_detection(frame, detections, model_name, time_reference, counter_frame, previous_num_people, last_capture_time, streamName, customer_id, cameraId)   
-     
+                elif model_name == 'vehical_detection':
+                    
+                    frame = process_vehicle_detection(frame, model)
+                    
    
                 try:
                     process.stdin.write(frame.tobytes())

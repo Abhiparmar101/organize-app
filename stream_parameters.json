@@ -158,5 +158,13 @@
         "cameraId": "C5781F20-44DE-41CF-9A2A-41CCCC449CBE",
         "streamName": "0ab069ac-de5a-4f53-9d5b-1159d43ef63a",
         "retrying": false
+    },
+    "rtmp://media5.ambicam.com:1938/live/testflv_vehical_detection": {
+        "model_name": "vehical_detection",
+        "camera_url": "rtmp://media5.ambicam.com:1938/live/testflv",
+        "customer_id": "testflv",
+        "cameraId": "testflv",
+        "streamName": "testflv",
+        "retrying": false
     }
 }

@@ -1,6 +1,7 @@
 /prebuilt_model/
-/orgappenv/
+/env/
 /blobdrive/
 /app/__pycache__/
 /app/model_execution/__pycache__/
 __pycache__/
+yolov5/runs/train/*

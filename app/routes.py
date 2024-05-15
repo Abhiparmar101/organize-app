@@ -11,26 +11,12 @@ import json
 import tailer
 import requests
 import time
+from pathlib import Path
+from .utils.retrian_model.crowd_retrain_dataset_formation import DatasetProcessor
+#############################################################
 logging.basicConfig(filename='logs/video_streaming.log', filemode='a', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 #######################################################
-
-# def save_stream_parameters(stream_key, data):
-#     """Append the stream parameters and stream_key to a JSON file."""
-#     try:
-#         # Attempt to read the existing data
-#         with open('stream_parameters.json', 'r') as file:
-#             all_stream_data = json.load(file)
-#     except (FileNotFoundError, json.JSONDecodeError):
-#         # If the file doesn't exist or is empty/corrupt, start fresh
-#         all_stream_data = {}
-
-#     # Update the data with the new stream
-#     all_stream_data[stream_key] = data  # Assign the new data under its stream_key
-
-#     # Write the updated data back to the file
-#     with open('stream_parameters.json', 'w') as file:
-#         json.dump(all_stream_data, file, indent=4)
 
 def save_stream_parameters(stream_key, data, retrying=False):
     try:
@@ -62,22 +48,6 @@ def trigger_api_call(api_parameters):
     response = requests.post(url, json=api_parameters, headers=headers, verify=False)  # Skipping SSL verification for example
     print(f"API Call Triggered: Status Code {response.status_code}, Response: {response.text}")
    
-
-# def monitor_log_and_trigger_api():
-#     for line in tailer.follow(open("/home/torqueai/gituhub/organize-app/logs/video_streaming.log")):
-#         if "Stream terminated:" in line or "Failed to read from camera" in line:
-#             # Extract the stream URL from the log line
-#             stream_url = line.split(": ")[-1].strip()
-#             # Generate the stream_key from the URL (ensure this matches the logic used when saving the parameters)
-#             # This is a simplified example; adjust the logic to accurately generate the stream_key from the stream_url
-#             stream_key = stream_url  # Assuming the stream_key is the last part of the URL
-
-#             api_parameters = get_api_parameters(stream_key)
-#             if api_parameters:
-#                 print(f"Retrying stream for {stream_key}")
-#                 trigger_api_call(api_parameters)
-#             else:
-#                 print(f"No parameters found for stream_key: {stream_key}")
 import time
 
 def monitor_log_and_trigger_api():
@@ -225,6 +195,26 @@ def configure_routes(app):
         except Exception as e:
             # Handle errors, such as if the directory does not exist
             return jsonify({'error': str(e)}), 500
+    ############ retrain model list
+    @app.route('/get_retrain_models', methods=['POST'])
+    def get_retrain_models():
+        data = request.get_json()
+        customer_id = data.get('customer_id')
+        if not customer_id:
+            return jsonify({"error": "Customer ID is required"}), 400
+
+        models_list = fetch_models_for_customer(customer_id)
+        return jsonify(models_list)
+
+    def fetch_models_for_customer(customer_id):
+        base_path = Path(os.getcwd()+"/blobdrive/")  # Set this to your base directory path
+        customer_path = base_path / customer_id/"retrain_models"
+        if not customer_path.exists():
+            return {"error": f"No models found for customer ID {customer_id}"}
+
+        # List all model files in the directory
+        model_files = [file.name for file in customer_path.glob('*.pt')]
+        return {"models": model_files}
 
     #####upload
     ALLOWED_EXTENSIONS = {'pt'}
@@ -273,3 +263,22 @@ def configure_routes(app):
             return jsonify({'error': 'Model does not exist'}), 404
         os.remove(model_path)
         return jsonify({'message': 'Model deleted successfully'}), 200
+    ################################################################################
+    ################### Retrain the model ##########################################
+    @app.route('/process_dataset', methods=['POST'])
+    def process_dataset():
+        data = request.get_json()
+        model_name = data.get('model_name')
+        image_dir = data.get('image_dir')
+        customer_id=data.get('customer_id')
+        print(customer_id)
+        image_path=os.path.join(os.getcwd()+"/blobdrive/",image_dir)
+
+        if model_name == 'crowd':
+            label='person'
+            # image_dir=Path(image_dir)
+            processor = DatasetProcessor(model_name, os.getcwd() + '/blobdrive/',customer_id)
+            processor.process_dataset(image_path,label)
+            return jsonify({'message': 'Dataset processed successfully'}), 200
+        else:
+            return jsonify({'error': 'Model not supported'}), 400
