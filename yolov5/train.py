@@ -98,7 +98,13 @@ LOCAL_RANK = int(os.getenv("LOCAL_RANK", -1))  # https://pytorch.org/docs/stable
 RANK = int(os.getenv("RANK", -1))
 WORLD_SIZE = int(os.getenv("WORLD_SIZE", 1))
 GIT_INFO = check_git_info()
-
+def ensure_directory_exists(path):
+    """Ensure directory exists."""
+    if not os.path.exists(path):
+        os.makedirs(path)
+        print(f"Directory created: {path}")
+    else:
+        print(f"Directory already exists: {path}")
 
 def train(hyp, opt, device, callbacks):
     """
@@ -109,6 +115,8 @@ def train(hyp, opt, device, callbacks):
     """
     save_dir, epochs, batch_size, weights, single_cls, evolve, data, cfg, resume, noval, nosave, workers, freeze = (
         Path(opt.save_dir),
+         # Ensure save directory exists
+        
         opt.epochs,
         opt.batch_size,
         opt.weights,
@@ -125,6 +133,8 @@ def train(hyp, opt, device, callbacks):
     callbacks.run("on_pretrain_routine_start")
 
     # Directories
+    ensure_directory_exists(save_dir)  # Ensure save directory exists
+   
     w = save_dir / "weights"  # weights dir
     (w.parent if evolve else w).mkdir(parents=True, exist_ok=True)  # make dir
     last, best = w / "last.pt", w / "best.pt"

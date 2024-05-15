@@ -279,6 +279,6 @@ def configure_routes(app):
             # image_dir=Path(image_dir)
             processor = DatasetProcessor(model_name, os.getcwd() + '/blobdrive/',customer_id)
             processor.process_dataset(image_path,label)
-            return jsonify({'message': 'Dataset processed successfully'}), 200
+            return jsonify({'message': 'Model is generated successfully'}), 200
         else:
             return jsonify({'error': 'Model not supported'}), 400
