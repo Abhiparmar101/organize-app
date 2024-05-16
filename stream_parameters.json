@@ -166,5 +166,13 @@
         "cameraId": "testflv",
         "streamName": "testflv",
         "retrying": false
+    },
+    "rtmp://media5.ambicam.com:1938/live/testflv_crowd_v1": {
+        "model_name": "crowd_v1",
+        "camera_url": "rtmp://media5.ambicam.com:1938/live/testflv",
+        "customer_id": "A447481E-BF17-ED11-9128-D05099D384F8",
+        "cameraId": "testflv",
+        "streamName": "testflv",
+        "retrying": false
     }
 }

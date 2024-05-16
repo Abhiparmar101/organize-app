@@ -25,6 +25,7 @@ import math
 import cvzone
 from ultralytics import YOLO
 from collections import defaultdict
+import re
 #########################################################################3
 selected_model_name = None  # No default model
 detected_ids = set() 
@@ -130,6 +131,9 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
         model = YOLO('/home/torqurserver/github/organize-app/blobdrive/m/torquev1.pt')  # Adjust the path as necessary
         model.conf = 0.5
     elif model_name != 'firev8':
+        if re.match(r'crowd_v\d+', model_name):  # Check if the model name fits 'crowd_v{version_number}' pattern
+            # Fetch model from a specific directory if it's a version of 'crowd'
+            model_path = os.path.join(os.getcwd(), 'blobdrive', customer_id, 'retrain_models', f'{model_name}.pt')
         model_path = os.path.join(MODEL_BASE_PATH, f'{model_name}.pt')
         model = torch.hub.load('yolov5', 'custom', path=model_path, source='local', force_reload=True)
         model.conf = 0.4  # Confidence threshold
