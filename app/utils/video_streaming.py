@@ -134,9 +134,12 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
         if re.match(r'crowd_v\d+', model_name):  # Check if the model name fits 'crowd_v{version_number}' pattern
             # Fetch model from a specific directory if it's a version of 'crowd'
             model_path = os.path.join(os.getcwd(), 'blobdrive', customer_id, 'retrain_models', f'{model_name}.pt')
-        model_path = os.path.join(MODEL_BASE_PATH, f'{model_name}.pt')
-        model = torch.hub.load('yolov5', 'custom', path=model_path, source='local', force_reload=True)
-        model.conf = 0.4  # Confidence threshold
+            model = torch.hub.load('yolov5', 'custom', path=model_path, source='local', force_reload=True)
+            model.conf = 0.4  # Confidence threshold
+        else:
+            model_path = os.path.join(MODEL_BASE_PATH, f'{model_name}.pt')
+            model = torch.hub.load('yolov5', 'custom', path=model_path, source='local', force_reload=True)
+            model.conf = 0.4  # Confidence threshold
     else:
         # torch.cuda.set_device(1)
         model = YOLO(os.path.join(MODEL_BASE_PATH, 'firev8.pt'))
@@ -170,7 +173,7 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                         cv2.polylines(frame, [points], isClosed=False, color=(230, 230, 230), thickness=10)
                 elif model_name == 'firev8':
                     frame, last_fire_capture_time, fire_detected = process_fire_detection(frame, model, classnames, streamName, customer_id, cameraId, model_name, last_fire_capture_time, min_fire_interval)
-                elif model_name == 'crowd':
+                elif model_name == 'crowd' or model_name.startswith('crowd_v'):
                     results = model(frame)
                 
                     detections = results.xyxy[0].cpu().numpy()  # Get detection results
