@@ -198,5 +198,29 @@
         "cameraId": "00549812-e305-4809-9227-83bb6ca7e7b7",
         "streamName": "00549812-e305-4809-9227-83bb6ca7e7b7",
         "retrying": false
+    },
+    "rtmp://media5.ambicam.com:1938/live/12933eb2-c5c9-49ce-9a51-4c94e1484b6b_vehical_detection": {
+        "model_name": "vehical_detection",
+        "camera_url": "rtmp://media5.ambicam.com:1938/live/12933eb2-c5c9-49ce-9a51-4c94e1484b6b",
+        "customer_id": "A447481E-BF17-ED11-9128-D05099D384F8",
+        "cameraId": "00549812-e305-4809-9227-83bb6ca7e7b7",
+        "streamName": "12933eb2-c5c9-49ce-9a51-4c94e1484b6b",
+        "retrying": false
+    },
+    "rtmp://media5.ambicam.com:1938/live/8ed0bd65-3033-4879-add8-d398ec25118d_vehical_detection": {
+        "model_name": "vehical_detection",
+        "camera_url": "rtmp://media5.ambicam.com:1938/live/8ed0bd65-3033-4879-add8-d398ec25118d",
+        "customer_id": "A447481E-BF17-ED11-9128-D05099D384F8",
+        "cameraId": "8ed0bd65-3033-4879-add8-d398ec25118d",
+        "streamName": "8ed0bd65-3033-4879-add8-d398ec25118d",
+        "retrying": false
+    },
+    "rtmp://media5.ambicam.com:1938/live/731ad144-a53e-42fa-aa34-74abbab7f917_crowd_v2": {
+        "model_name": "crowd_v2",
+        "camera_url": "rtmp://media12.ambicam.com:1938/dvr30/731ad144-a53e-42fa-aa34-74abbab7f917",
+        "customer_id": "A447481E-BF17-ED11-9128-D05099D384F8",
+        "cameraId": "882D3A02-0013-436D-9DFD-A5AE08D179CE",
+        "streamName": "731ad144-a53e-42fa-aa34-74abbab7f917",
+        "retrying": false
     }
 }

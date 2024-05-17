@@ -24,6 +24,7 @@ class DatasetProcessor:
         try:
             output_dir = self.setup_directories(self.customer_id,image_dir)
             self.process_images(image_dir, output_dir)
+            print(output_dir)
             self.split(output_dir)
             self.start_training(output_dir)
         except Exception as e:
@@ -133,9 +134,10 @@ class DatasetProcessor:
             print("Output:", e.stderr)
             
     def move_model(self, source_directory):
-        target_directory = Path(self.base_path) / self.customer_id/ 'retrain_models'
+        # target_directory = Path(self.base_path) / self.customer_id/ 'retrain_models'
+        # target_directory.mkdir(parents=True, exist_ok=True)  # Create target directory if it doesn't exist
+        target_directory = Path(self.base_path) / 'm'
         target_directory.mkdir(parents=True, exist_ok=True)  # Create target directory if it doesn't exist
-
         latest_version = self.get_latest_model_version(target_directory)
         new_version = f"{self.model_name}_v{latest_version + 1}.pt"  # Increment model version
         
