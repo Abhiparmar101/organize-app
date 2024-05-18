@@ -15,14 +15,14 @@ class DatasetProcessor:
         self.default_model_path = self.base_path/f'm' / f'{model_name}.pt'
         self.model = self.load_model()
         self.customer_id=customer_id
-
+        
     def load_model(self):
         # Assuming torch.hub.load returns a loaded model
         return   torch.hub.load('yolov5', 'custom', path=self.default_model_path, source='local', force_reload=True)
 
-    def process_dataset(self, image_dir, label):
+    def process_dataset(self, image_dir,label,number_of_classes):
         try:
-            output_dir = self.setup_directories(self.customer_id,image_dir)
+            output_dir = self.setup_directories(self.customer_id,image_dir,label,number_of_classes)
             self.process_images(image_dir, output_dir)
             print(output_dir)
             self.split(output_dir)
@@ -30,12 +30,12 @@ class DatasetProcessor:
         except Exception as e:
             print(f"Cannot start training due to an error in the process: {e}")   
 
-    def setup_directories(self, customer_id,image_dir):
+    def setup_directories(self, customer_id,image_dir,label,number_of_classes):
         print("--------create the directories------")
         output_dir = Path(str(image_dir)) # Convert string path to Path object if not already
         
         output_dir.mkdir(parents=True, exist_ok=True)  # Ensure the base directory exists
-
+        
         # Create subdirectories using the / operator for Path objects
         (self.base_path/f'{customer_id}'/ "retrain_models").mkdir(parents=True, exist_ok=True)
         (output_dir / "data").mkdir(parents=True, exist_ok=True)
@@ -48,8 +48,8 @@ class DatasetProcessor:
         with (output_dir / "data" / 'data.yaml').open('w') as data:
             data.write(f'train: {output_dir}/data/images/train\n')
             data.write(f'val: {output_dir}/data/images/valid\n')
-            data.write('\nnc: 2\n')
-            data.write("names: ['person', 'head']\n")  # List of class names
+            data.write(f'nc: {number_of_classes}\n')  # Corrected formatting for number of classes
+            data.write(f"names: {label}\n")  # Corrected formatting for labels
             data.write('SAVE_VALID_PREDICTION_IMAGES: True\n')
         print("-------- directories is completed------")
         

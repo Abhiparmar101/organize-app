@@ -273,12 +273,18 @@ def configure_routes(app):
         customer_id=data.get('customer_id')
         print(customer_id)
         image_path=os.path.join(os.getcwd()+"/blobdrive/",image_dir)
+    
+        # Define the model configurations
+        model_configs = {
+            'crowd': {'number_of_classes': 2, 'labels': ['person', 'head']},
+            'vehicle_detection': {'number_of_classes': 5, 'labels': ['Car', 'Motorcycle', 'Truck', 'Bus', 'Bicycle']}
+        }
 
-        if model_name == 'crowd':
-            label='person'
-            # image_dir=Path(image_dir)
-            processor = DatasetProcessor(model_name, os.getcwd() + '/blobdrive/',customer_id)
-            processor.process_dataset(image_path,label)
-            return jsonify({'message': 'Model is generated successfully'}), 200
+        # Check if the model name is supported
+        if model_name in model_configs:
+            config = model_configs[model_name]
+            processor = DatasetProcessor(model_name, os.getcwd() + '/blobdrive/', customer_id)
+            processor.process_dataset(image_path, config['labels'], config['number_of_classes'])
+            return jsonify({'message': f'{model_name} model processed successfully'}), 200
         else:
-            return jsonify({'error': 'Model not supported'}), 400
+            return jsonify({'error': f'Model {model_name} not supported'}), 400

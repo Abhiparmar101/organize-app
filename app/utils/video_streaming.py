@@ -178,7 +178,7 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                 
                     detections = results.xyxy[0].cpu().numpy()  # Get detection results
                     frame, time_reference, counter_frame, previous_num_people, last_capture_time, streamName,customer_id, cameraId = process_crowd_detection(frame, detections, model_name, time_reference, counter_frame, previous_num_people, last_capture_time, streamName, customer_id, cameraId)   
-                elif model_name == 'vehical_detection':
+                elif model_name == 'vehicle_detection':
                    
                     frame,last_capture_time = process_vehicle_detection(frame, model,last_capture_time,streamName,customer_id, cameraId,time_reference,model_name)
                     

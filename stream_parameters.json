@@ -222,5 +222,13 @@
         "cameraId": "882D3A02-0013-436D-9DFD-A5AE08D179CE",
         "streamName": "731ad144-a53e-42fa-aa34-74abbab7f917",
         "retrying": false
+    },
+    "rtmp://media5.ambicam.com:1938/live/731ad144-a53e-42fa-aa34-74abbab7f917_crowd_v1": {
+        "model_name": "crowd_v1",
+        "camera_url": "rtmp://media12.ambicam.com:1938/dvr30/731ad144-a53e-42fa-aa34-74abbab7f917",
+        "customer_id": "A447481E-BF17-ED11-9128-D05099D384F8",
+        "cameraId": "882D3A02-0013-436D-9DFD-A5AE08D179CE",
+        "streamName": "731ad144-a53e-42fa-aa34-74abbab7f917",
+        "retrying": true
     }
 }
