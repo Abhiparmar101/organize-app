@@ -20,9 +20,7 @@ from app.error_warning_handling import update_camera_status_in_database
 from app.model_execution.crowd_count import process_crowd_detection
 from app.model_execution.firev8 import process_fire_detection
 from app.model_execution.vehical_detection import process_vehicle_detection
-import sys
-import math
-import cvzone
+
 from ultralytics import YOLO
 from collections import defaultdict
 import re
@@ -149,7 +147,7 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
             while True:
                 ret, frame = video_cap.read()
                 if not ret:
-                    update_camera_status_in_database(cameraId, False)
+                    
                     break
                 if model_name == 'torquev1':
                     results = model.track(frame, persist=True)
@@ -188,17 +186,17 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
                 
                 except BrokenPipeError:
                     print("Broken pipe - FFmpeg process may have terminated unexpectedly.")
-                    update_camera_status_in_database(cameraId,False)
+                   
                     logging.error(f"Stream terminated: {stream_key}")
                     break
     except Exception as e:
         print(f"An error occurred: {e}")
-        update_camera_status_in_database(cameraId,False)
+       
         logging.error(f"An unexpected error occurred: {e}")
     finally:
         if video_out is not None:
             video_out.release()
-            update_camera_status_in_database(cameraId, False)
+          
             
         if process.poll() is None:
             process.terminate()
