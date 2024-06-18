@@ -20,6 +20,8 @@ from app.utils.globals import stream_processes
 from app.utils.async_api import async_api_call
 import signal
 import sys
+import requests
+import certifi
 os.environ['OPENCV_FFMPEG_READ_ATTEMPTS'] = '50000000'
 
 # Logging setup
@@ -121,6 +123,46 @@ def trigger_api_call(api_parameters):
             session.rollback()
         finally:
             session.close()
+
+def fetch_api_streams():
+    api_url = "https://media5.ambicam.com/api/streams"
+    try:
+        response = requests.get(api_url, verify=certifi.where())
+        response.raise_for_status()
+        streams = response.json()
+        # print("API Response:", streams)  # Print the API response to debug
+        return streams
+    except requests.exceptions.RequestException as e:
+        # print(f"Error fetching stream data from API: {e}")
+        return []
+
+
+def check_and_update_stream_status():
+    session = Session()
+    try:
+        api_streams = fetch_api_streams()
+        api_stream_names = {stream['name'] for stream in api_streams}
+
+        streams_to_update = session.query(StreamParameter).all()
+
+        for stream in streams_to_update:
+            if stream.aistreamkey in api_stream_names:
+                stream.status = True
+            else:
+                stream.status = False
+
+        session.commit()
+        print(f"Updated stream statuses based on API data at {datetime.datetime.utcnow()}")
+    except Exception as e:
+        print(f"Error updating stream statuses: {e}")
+        session.rollback()
+    finally:
+        session.close()
+
+def periodic_stream_check(interval=5):
+    while True:
+        check_and_update_stream_status()
+        time.sleep(interval)
 
 def monitor_log_and_trigger_api():
     session = Session()
@@ -412,3 +454,8 @@ def configure_routes(app):
         else:
             return jsonify({'error': f'Model {model_name} not supported'}), 400
 
+threading.Thread(target=monitor_log_and_trigger_api, daemon=True).start()
+
+# Start the periodic stream check in a separate thread
+stream_check_thread = threading.Thread(target=periodic_stream_check, daemon=True)
+stream_check_thread.start()
