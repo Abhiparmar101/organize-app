@@ -72,7 +72,7 @@ def process_and_stream_frames(model_name, camera_url, stream_key,customer_id,cam
     #         '-g', '30',  # Keyframe every second if 30fps
     #         '-f', 'flv',
     #         rtmp_url]
-    fps =20
+    fps =10
     command = ['ffmpeg',
                '-y',
                '-f', 'rawvideo',
