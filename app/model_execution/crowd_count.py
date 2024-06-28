@@ -23,7 +23,7 @@ class CrowdCount(Base):
     image_name = Column(String, nullable=False)
     camera_id = Column(String, nullable=False)
     model_name = Column(String, nullable=False)
-    num_people = Column(Integer, nullable=False)
+    personcount = Column(Integer, nullable=False)
 
 # Create the table if it does not exist
 Base.metadata.create_all(engine)
@@ -65,7 +65,7 @@ def process_crowd_detection(frame, detections, model_name, time_reference, count
             image_name=image_name,
             camera_id=cameraId,
             model_name=model_name,
-            num_people=num_people
+            personcount=num_people
         )
         session.add(new_entry)
         session.commit()
